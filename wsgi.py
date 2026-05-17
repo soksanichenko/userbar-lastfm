@@ -1,17 +1,17 @@
-# coding: utf-8
-# developed by Stepan Oksanichenko
+from __future__ import annotations
+
 import os
 
 import config
 from flask import Flask
-from flask_bootstrap import Bootstrap
 from werkzeug.middleware.proxy_fix import ProxyFix
 
 
-def create_app():
-    """
-    Create flask application
-    :return: flask applicatoin
+def create_app() -> Flask:
+    """Create and configure the Flask application.
+
+    Returns:
+        Configured Flask application instance.
     """
     from main import lastfm_app
 
@@ -19,9 +19,7 @@ def create_app():
     app.config.from_object(config)
     app.register_blueprint(lastfm_app, url_prefix='/')
     app.url_map.strict_slashes = False
-    app.wsgi_app = ProxyFix(app.wsgi_app)
-    Bootstrap(app)
-
+    app.wsgi_app = ProxyFix(app.wsgi_app)  # type: ignore[method-assign]
     return app
 
 
@@ -35,12 +33,8 @@ def _force_https(wsgi_app):
 application = create_app()
 
 if not os.environ.get('FLASK_DEBUG'):
-    application.wsgi_app = _force_https(application.wsgi_app)
+    application.wsgi_app = _force_https(application.wsgi_app)  # type: ignore[method-assign]
 
 if __name__ == '__main__':
     if os.environ.get('FLASK_DEBUG'):
-        application.run(
-            debug=True,
-            host='0.0.0.0',
-            port=8080,
-        )
+        application.run(debug=True, host='0.0.0.0', port=8080)

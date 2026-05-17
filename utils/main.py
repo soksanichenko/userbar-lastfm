@@ -1,230 +1,202 @@
-# coding: utf-8
-# developed by Stepan Oksanichenko
+from __future__ import annotations
+
+import logging
 import os
 from io import BytesIO
+
+from PIL import Image, ImageDraw, ImageFont
+
 from config import LASTFM_API_KEY, PATH_TO_FONT
-from PIL import Image, ImageFont, ImageDraw
+from main import lastfm_app
 
 from .api import LastFmException, User
 
-from main import lastfm_app
+logger = logging.getLogger(__name__)
+
+RGBColor = tuple[int, int, int]
 
 
-def user_get_last_track(username=None):
-    """Get user last track
+def user_get_last_track(username: str) -> dict | str:
+    """Fetch the most recent (or currently playing) track for a Last.fm user.
 
-    :param username: last.fm username
+    Args:
+        username: Last.fm username.
 
-    :return last_track: user last track
-
+    Returns:
+        Dict with track info, or a string error/status message.
     """
     result = None
-    last_track = None
-    user = User(LASTFM_API_KEY, username=username) or None
+    last_track: dict | str | None = None
+    user = User(LASTFM_API_KEY, username=username)
     try:
         result = user.user_get_recent_tracks(extended=1)
         result = result['recent_tracks']
     except LastFmException as error:
         last_track = error.message
+
     if not result and not last_track:
         last_track = 'Not recent tracks'
     elif isinstance(result, list):
-        last_track = [track for track in result if track.get('now_playing')]
-        if not last_track:
-            last_track = result
-        last_track = dict(last_track[0])
+        playing = [track for track in result if track.get('now_playing')]
+        last_track = dict((playing or result)[0])
 
-    return last_track
+    return last_track  # type: ignore[return-value]
 
 
-def gradient(inner_color, outer_color, border_color=None, width=350):
+def _interpolate(f_co: RGBColor, t_co: RGBColor, steps: int):
+    """Yield interpolated RGB color tuples between f_co and t_co."""
+    det_co = [(t - f) / steps for f, t in zip(f_co, t_co)]
+    for i in range(steps):
+        yield tuple(round(f + det * i) for f, det in zip(f_co, det_co))
+
+
+def gradient(inner_color: RGBColor, outer_color: RGBColor,
+             border_color: RGBColor | None = None, width: int = 350) -> BytesIO:
+    """Render a horizontal gradient image and return it as a BytesIO PNG.
+
+    Args:
+        inner_color: Left-side gradient colour (RGB tuple).
+        outer_color: Right-side gradient colour (RGB tuple).
+        border_color: Optional border colour; draws a 2-px framed border.
+        width: Image width in pixels.
+
+    Returns:
+        BytesIO containing the PNG image, seeked to position 0.
     """
-    Create user bar with gradient
+    img = Image.new('RGBA', (width, 23), color=0)
+    draw = ImageDraw.Draw(img)
 
-    :param inner_color: start color
-    :param outer_color: end color
-    :param border_color: color of border
-    :param width: width of userbar
-
-    :return: BytesIO with img
-
-    """
-
-    def interpolate(f_co, t_co, interval):
-        det_co = [(t - f) / interval for f, t in zip(f_co, t_co)]
-        for i in range(interval):
-            yield [round(f + det * i) for f, det in zip(f_co, det_co)]
-
-    img_size = (width, 23)
-    image = Image.new('RGBA', img_size, color=0)
-    draw = ImageDraw.Draw(image)
-
-    for i, color in enumerate(interpolate(inner_color, outer_color, image.width)):
-        draw.line([(i, 0), (i, image.height)], tuple(color), width=1)
+    for i, color in enumerate(_interpolate(inner_color, outer_color, img.width)):
+        draw.line([(i, 0), (i, img.height)], tuple(color), width=1)
 
     if border_color is not None:
-        invert_border_color = tuple(map(lambda item: 255 - int(item), border_color))
-        draw.line([(0, 0), (image.width - 1, 0)], border_color, width=1)
-        draw.line([(0, image.height - 1), (image.width - 1, image.height - 1)], border_color, width=1)
-        draw.line([(0, 0), (0, image.height - 1)], width=1, fill=border_color)
-        draw.line([(image.width - 1, 0), (image.width - 1, image.height - 1)], width=1, fill=border_color)
-        draw.line([(1, 1), (image.width - 2, 1)], width=1, fill=invert_border_color)
-        draw.line([(1, image.height - 2), (image.width - 2, image.height - 2)], width=1, fill=invert_border_color)
-        draw.line([(1, 1), (1, image.height - 2)], width=1, fill=invert_border_color)
-        draw.line([(image.width - 2, 1), (image.width - 2, image.height - 2)], width=1, fill=invert_border_color)
-    out_img = BytesIO()
-    image.save(out_img, 'PNG')
-    out_img.seek(0)
+        inv = tuple(255 - c for c in border_color)
+        w, h = img.width - 1, img.height - 1
+        draw.line([(0, 0), (w, 0)], border_color, width=1)
+        draw.line([(0, h), (w, h)], border_color, width=1)
+        draw.line([(0, 0), (0, h)], border_color, width=1)
+        draw.line([(w, 0), (w, h)], border_color, width=1)
+        draw.line([(1, 1), (w - 1, 1)], inv, width=1)
+        draw.line([(1, h - 1), (w - 1, h - 1)], inv, width=1)
+        draw.line([(1, 1), (1, h - 1)], inv, width=1)
+        draw.line([(w - 1, 1), (w - 1, h - 1)], inv, width=1)
 
-    return out_img
+    out = BytesIO()
+    img.save(out, 'PNG')
+    out.seek(0)
+    return out
 
 
-def paste_text(text, text_color, inner_color, outer_color, border_color, truncate_text=False):
-    """
-    Paste text on img
+def paste_text(text: str, text_color: RGBColor, inner_color: RGBColor,
+               outer_color: RGBColor, border_color: RGBColor | None,
+               truncate_text: bool = False) -> BytesIO:
+    """Render text onto a gradient background and return it as a BytesIO PNG.
 
-    :param truncate_text: truncate userbar text
-    :param text: text for pasting
-    :param inner_color: start color for BG
-    :param outer_color: end color for BG
-    :param text_color: color of paste text
-    :param border_color: color of border
+    Args:
+        text: Text string to draw.
+        text_color: Text colour (RGB tuple).
+        inner_color: Left-side gradient colour.
+        outer_color: Right-side gradient colour.
+        border_color: Optional border colour.
+        truncate_text: Cap bar width at 750 px and truncate text to 95 chars.
 
-    :return: BytesIO with img
-
+    Returns:
+        BytesIO containing the PNG image, seeked to position 0.
     """
     default_width = 305
     max_width = 750
-    trunc_value = 70
-    in_img = gradient(inner_color, outer_color, border_color, width=default_width)
+    logo_margin = 70
     trunc_len = 95
     x, y = 10, 2
-    in_img.seek(0)
-    img = Image.new('RGBA', (1, 1,))
-    draw = ImageDraw.Draw(img)
-    font = ImageFont.truetype(os.path.join(lastfm_app.static_folder, PATH_TO_FONT), 14, encoding='utf-8')
-    text_width, _ = draw.textsize(text, font)
+
+    font_path = os.path.join(lastfm_app.static_folder, PATH_TO_FONT)
+    font = ImageFont.truetype(font_path, 14, encoding='utf-8')
+
+    probe = Image.new('RGBA', (1, 1))
+    text_width = int(ImageDraw.Draw(probe).textlength(text, font=font))
+
     if truncate_text:
-        bar_width = min(max_width, trunc_value + text_width)
+        bar_width = min(max_width, logo_margin + text_width)
         text = '{}...'.format(text[:trunc_len]) if len(text) > trunc_len else text
     else:
-        bar_width = max(default_width, trunc_value + text_width)
+        bar_width = max(default_width, logo_margin + text_width)
+
     in_img = gradient(inner_color, outer_color, border_color, width=bar_width)
-    in_img.seek(0)
     img = Image.open(in_img)
-    draw = ImageDraw.Draw(img)
-    draw.text((x, y), text, font=font, fill=text_color)
-    out_img = BytesIO()
-    img.save(out_img, 'PNG')
-    out_img.seek(0)
+    ImageDraw.Draw(img).text((x, y), text, font=font, fill=text_color)
 
-    return out_img
+    out = BytesIO()
+    img.save(out, 'PNG')
+    out.seek(0)
+    return out
 
 
-def paste_logo(in_img, logo_color=None):
+def paste_logo(in_img: BytesIO, logo_color: RGBColor | None = None) -> BytesIO:
+    """Paste a recoloured logo onto the right edge of the image.
+
+    Args:
+        in_img: BytesIO source image.
+        logo_color: Target colour for logo pixels; if None, returns in_img unchanged.
+
+    Returns:
+        BytesIO containing the composited PNG, seeked to position 0.
     """
-    Paste logo to userbar
-    :param in_img: BytesIO with img
-    :param logo_color: color of logo
-
-
-    :return: BytesIO with img
-
-    """
-
     if logo_color is None:
         return in_img
 
     logo = Image.open(os.path.join(lastfm_app.static_folder, 'logo.png'))
+    for lx in range(logo.size[0]):
+        for ly in range(logo.size[1]):
+            pixel = logo.getpixel((lx, ly))
+            if pixel[3] > 0:
+                logo.putpixel((lx, ly), (*logo_color, pixel[3]))
+
     in_img.seek(0)
     img = Image.open(in_img)
-    for x in range(logo.size[0]):
-        for y in range(logo.size[1]):
-            pixel = logo.getpixel((x, y))
-            if pixel[3] > 0:
-                out_pixel = list(logo_color)
-                out_pixel.append(pixel[3])
-                out_pixel = tuple(out_pixel)
-                logo.putpixel((x, y), out_pixel)
-    out_img = BytesIO()
-    width, height = img.size
-    img.paste(logo, (width - 40, 3), logo)
-    img.save(out_img, 'PNG')
-    out_img.seek(0)
+    img.paste(logo, (img.width - 40, 3), logo)
 
-    return out_img
+    out = BytesIO()
+    img.save(out, 'PNG')
+    out.seek(0)
+    return out
 
 
-def make_userbar_text(text_format='{artist_name} - {track_name}', **kwargs):
+def make_userbar_text(text_format: str = '{artist_name} - {track_name}', **kwargs: object) -> str:
+    """Format the userbar text string from track metadata.
+
+    Args:
+        text_format: Template string with named placeholders.
+        **kwargs: Track metadata fields (artist_name, track_name, etc.).
+
+    Returns:
+        Formatted userbar text.
     """
-    Make userbar text
-    :param text_format: text format
-    :param kwargs: key for formatting text
-    :return: userbar text
+    return text_format.format(**kwargs)
+
+
+def create_userbar(username: str, inner_color: RGBColor, outer_color: RGBColor,
+                   text_color: RGBColor, border_color: RGBColor | None = None,
+                   logo_color: RGBColor | None = None, truncate_text: bool = False) -> BytesIO:
+    """Build a complete Last.fm userbar image for the given user.
+
+    Args:
+        username: Last.fm username.
+        inner_color: Left-side gradient colour.
+        outer_color: Right-side gradient colour.
+        text_color: Text colour.
+        border_color: Optional border colour.
+        logo_color: Optional logo colour; if None, no logo is drawn.
+        truncate_text: Cap bar width at 750 px.
+
+    Returns:
+        BytesIO containing the PNG image, seeked to position 0.
     """
-
-    out_text = text_format.format(**kwargs)
-
-    return out_text
-
-
-def create_userbar(username, inner_color, outer_color, text_color, border_color=None, logo_color=None,
-                   truncate_text=False):
-    """
-
-    Create user bar
-
-    :param truncate_text: truncate userbar text
-    :param border_color: color of border
-    :param username: lastfm_app username
-    :param inner_color: start color for BG
-    :param outer_color: end color for BG
-    :param text_color: color of paste text
-    :param logo_color: color of logo
-
-    :return: BytesIO with img
-
-    """
-
     result = user_get_last_track(username=username)
-    if isinstance(result, dict):
-        text = make_userbar_text(**result)
-    else:
-        text = result
-    print(text)
+    text = make_userbar_text(**result) if isinstance(result, dict) else result
+    logger.info('userbar text: %s', text)
+
     img = paste_text(text, text_color, inner_color, outer_color, border_color, truncate_text)
     img.seek(0)
     if logo_color is not None:
         img = paste_logo(img, logo_color)
-
-    return img
-
-
-def create_userbar2(username, ic, oc, tc, bc=None, lc=None, tt=False):
-    """
-
-    Create user bar
-
-    :param tt: truncate userbar text
-    :param bc: color of border
-    :param username: lastfm_app username
-    :param ic: start color for BG
-    :param oc: end color for BG
-    :param tc: color of paste text
-    :param lc: color of logo
-
-    :return: BytesIO with img
-
-    """
-    result = user_get_last_track(username=username)
-    if isinstance(result, dict):
-        text = make_userbar_text(**result)
-    else:
-        text = result
-    print(text)
-    img = paste_text(text, tc, ic, oc, bc, tt)
-    img.seek(0)
-    if lc is not None:
-        img = paste_logo(img, lc)
-
     return img

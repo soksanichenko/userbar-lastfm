@@ -14,19 +14,16 @@
     </tr>
     <tr>
         <td>{{ form.border_color.label }}</td>
-        <td>{{ form.enable_border(onchange="enable_disable(this, 'border_color')",
-        id="enable_border") }}
+        <td>{{ form.enable_border(onchange="enable_disable(this, 'border_color')", id="enable_border") }}
             {{ form.border_color(id="border_color") }}</td>
     </tr>
     <tr>
         <td>{{ form.logo_color.label }}</td>
-        <td>{{ form.enable_logo(onchange="enable_disable(this, 'logo_color')",
-        id="enable_logo") }}
+        <td>{{ form.enable_logo(onchange="enable_disable(this, 'logo_color')", id="enable_logo") }}
             {{ form.logo_color(id="logo_color") }}</td>
     </tr>
     <tr>
         <td>{{ form.truncate_text.label }}</td>
         <td>{{ form.truncate_text }}</td>
     </tr>
-    {{super()}}
 {% endblock %}

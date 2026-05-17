@@ -1,15 +1,17 @@
-# coding: utf-8
-# developed by Stepan Oksanichenko
-from functools import wraps, update_wrapper
+from __future__ import annotations
+
+from collections.abc import Callable
+from functools import wraps
+from typing import Any
 
 from flask import make_response
 
 
-def nocache(view):
+def nocache(view: Callable[..., Any]) -> Callable[..., Any]:
+    """Decorator that adds no-cache headers to any Flask view response."""
     @wraps(view)
-    def no_cache(*args, **kwargs):
+    def no_cache(*args: Any, **kwargs: Any) -> Any:
         response = make_response(view(*args, **kwargs))
         response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
         return response
-
-    return update_wrapper(no_cache, view)
+    return no_cache

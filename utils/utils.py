@@ -1,52 +1,39 @@
-# coding: utf-8
-# developed by Stepan Oksanichenko
+from __future__ import annotations
 
 
-def parse_color_string(color):
+def parse_color_string(color: str) -> tuple[int, ...]:
+    """Parse an underscore-separated RGB string into a tuple.
+
+    Args:
+        color: Color encoded as 'R_G_B' (e.g. '255_128_0').
+
+    Returns:
+        RGB tuple of ints.
     """
+    return tuple(int(c) for c in color.split('_'))
 
-    Parse color string from url
-    :param color: color string
-    :return: RGB tuple
 
+def hex_to_rgb_string(color: str) -> str:
+    """Convert a hex color string to underscore-separated RGB.
+
+    Args:
+        color: Hex color string, with or without leading '#' (e.g. '#FF8000').
+
+    Returns:
+        RGB encoded as 'R_G_B' (e.g. '255_128_0').
     """
-
-    color = color.split('_')
-    color = map(lambda item: int(item), color)
-    color = tuple(color)
-
-    return color
-
-
-def hex_to_rgb_string(color):
-    """
-
-    Convert hex color to rgb string color
-
-    :param color: hex color
-    :return: rgb string color
-
-    """
-
     color = color.lstrip('#')
-    color = [int(color[i:i+2], 16) for i in (0, 2, 4)]
-    color = map(lambda item: str(item), color)
-    color = '_'.join(color)
-
-    return color
+    return '_'.join(str(int(color[i:i + 2], 16)) for i in (0, 2, 4))
 
 
-def hex_to_rgb_tuple(color):
+def hex_to_rgb_tuple(color: str) -> tuple[int, int, int]:
+    """Convert a hex color string to an RGB tuple.
+
+    Args:
+        color: Hex color string, with or without leading '#' (e.g. '#FF8000').
+
+    Returns:
+        RGB tuple of ints.
     """
-
-    Convert hex color to rgb tuple color
-
-    :param color: hex color
-    :return: rgb tuple color
-
-    """
-
     color = color.lstrip('#')
-    color = tuple(int(color[i:i+2], 16) for i in (0, 2, 4))
-
-    return color
+    return (int(color[0:2], 16), int(color[2:4], 16), int(color[4:6], 16))

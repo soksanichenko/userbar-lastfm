@@ -1,29 +1,33 @@
 {% extends "index.html" %}
 {% block scripts %}
-    <script src="{{ url_for('static', filename='js/generator.js') }}" language="JavaScript" type="text/javascript">
-    </script>
-    {{super()}}
+    <script src="{{ url_for('static', filename='js/generator.js') }}"></script>
+    {{ super() }}
 {% endblock %}
 {% block content %}
     <h1>{{ title }}</h1>
     <hr>
+    {% for field in form %}
+        {% if field.errors %}
+            {% for error in field.errors %}
+                <div class="alert alert-danger">{{ field.label.text }}: {{ error }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endfor %}
     <form method="post" name="userbar_form" class="form form-horizontal" role="form">
         {{ form.hidden_tag() }}
-        {{ wtf.form_errors(form, hiddens=only) }}
         <table class="center-table">
             <tbody>
             <tr>
                 <td><label for="username">{{ form.username.label }}</label></td>
                 <td>{{ form.username(style="text-align: center",
-                onkeydown="this.size = this.value.length > 10 ? this.value.length + 5 : 10",
-                onkeyup="this.size = this.value.length > 10 ? this.value.length + 5 : 10",
-                onfocus="this.size = this.value.length > 10 ? this.value.length + 5 : 10",
-                onblur="this.size = this.value.length > 10 ? this.value.length + 5 : 10",
-                        size=15) }}
+                    onkeydown="this.size = this.value.length > 10 ? this.value.length + 5 : 10",
+                    onkeyup="this.size = this.value.length > 10 ? this.value.length + 5 : 10",
+                    onfocus="this.size = this.value.length > 10 ? this.value.length + 5 : 10",
+                    onblur="this.size = this.value.length > 10 ? this.value.length + 5 : 10",
+                    size=15) }}
                 </td>
             </tr>
-            {% block params %}
-            {% endblock %}
+            {% block params %}{% endblock %}
             <tr>
                 <td colspan="2" class="center">
                     <input type="submit" value="Generate userbar">
@@ -32,61 +36,43 @@
             </tbody>
         </table>
         {% if result %}
-         <hr>
-         <table class="center-table">
+        <hr>
+        <table class="center-table">
             <tbody>
             <tr>
-                <td>
-                    <b><label for="simple_url_result">Simple link</label></b>
-                </td>
-                <td>
-                    <input type="text" value="{{ result }}" id="simple_url_result" style="text-align: center">
-                </td>
-                </tr>
+                <td><b><label for="simple_url_result">Simple link</label></b></td>
+                <td><input type="text" value="{{ result }}" id="simple_url_result" style="text-align: center"></td>
+            </tr>
             <tr>
+                <td><b><label for="bb_code_result">BB-code</label></b></td>
+                <td><input type="text" value="[img]{{ result }}[/img]" id="bb_code_result" style="text-align: center"></td>
+            </tr>
             <tr>
-                <td>
-                    <b><label for="bb_code_result">BB-code</label></b>
-                </td>
-                <td>
-                    <input type="text" value="[img]{{ result }}[/img]" id="bb_code_result" style="text-align: center">
-                </td>
-                </tr>
+                <td><b><label for="bb_code_with_link_result">BB-code + Link to profile</label></b></td>
+                <td><input type="text"
+                           value="[url=https://www.last.fm/user/{{ form.username.data }}][img]{{ result }}[/img][/url]"
+                           id="bb_code_with_link_result" style="text-align: center"></td>
+            </tr>
             <tr>
+                <td><b><label for="html_code_result">HTML-code</label></b></td>
+                <td><input type="text" value='<img src="{{ result }}">' id="html_code_result" style="text-align: center"></td>
+            </tr>
             <tr>
-                <td>
-                    <b><label for="bb_code_with_link_result">BB-code + Link to profile</label></b>
-                </td>
-                <td>
-                    <input type="text" value="[url=https://www.last.fm/user/{{ form.username.data }}][img]{{ result }}[/img][/url]" id="bb_code_with_link_result" style="text-align: center">
-                </td>
-                </tr>
-            <tr>
-            <tr>
-                <td>
-                    <b><label for="html_code_result">HTML-code</label></b>
-                </td>
-                <td>
-                    <input type="text" value='<img src="{{ result }}">' id="html_code_result" style="text-align: center">
-                </td>
-                </tr>
-            <tr>
-            <tr>
-                <td>
-                    <b><label for="html_code_with_link_result">HTML-code + Link to profile</label></b>
-                </td>
-                <td>
-                    <input type="text" value='<a href="https://www.last.fm/user/{{ form.username.data }}"><img src="{{ result }}"></a>' id="html_code_with_link_result" style="text-align: center">
-                </td>
-                </tr>
+                <td><b><label for="html_code_with_link_result">HTML-code + Link to profile</label></b></td>
+                <td><input type="text"
+                           value='<a href="https://www.last.fm/user/{{ form.username.data }}"><img src="{{ result }}"></a>'
+                           id="html_code_with_link_result" style="text-align: center"></td>
+            </tr>
             <tr>
                 <td colspan="2" class="center">
-                    <a href="https://www.last.fm/user/{{ form.username.data }}"><img src="{{ result }}"></a>
+                    <a href="https://www.last.fm/user/{{ form.username.data }}">
+                        <img src="{{ result }}" alt="userbar">
+                    </a>
                 </td>
             </tr>
             </tbody>
-         </table>
+        </table>
         {% endif %}
     </form>
-    {{super()}}
+    {{ super() }}
 {% endblock %}
