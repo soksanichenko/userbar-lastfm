@@ -1,29 +1,153 @@
-{% extends "generator.html" %}
-{% block params %}
-    <tr>
-        <td>{{ form.inner_color.label }}</td>
-        <td>{{ form.inner_color }}</td>
-    </tr>
-    <tr>
-        <td>{{ form.outer_color.label }}</td>
-        <td>{{ form.outer_color }}</td>
-    </tr>
-    <tr>
-        <td>{{ form.text_color.label }}</td>
-        <td>{{ form.text_color }}</td>
-    </tr>
-    <tr>
-        <td>{{ form.border_color.label }}</td>
-        <td>{{ form.enable_border(onchange="enable_disable(this, 'border_color')", id="enable_border") }}
-            {{ form.border_color(id="border_color") }}</td>
-    </tr>
-    <tr>
-        <td>{{ form.logo_color.label }}</td>
-        <td>{{ form.enable_logo(onchange="enable_disable(this, 'logo_color')", id="enable_logo") }}
-            {{ form.logo_color(id="logo_color") }}</td>
-    </tr>
-    <tr>
-        <td>{{ form.truncate_text.label }}</td>
-        <td>{{ form.truncate_text }}</td>
-    </tr>
+{% extends "index.html" %}
+{% block title %}Last.Fm UserBar Generator{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <h1 class="text-center mb-4">Last.Fm UserBar Generator</h1>
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+
+            <!-- Form card -->
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+
+                    <!-- Username -->
+                    <div class="mb-4">
+                        <label for="username" class="form-label fw-semibold">Last.fm Username</label>
+                        <div class="input-group">
+                            <input type="text" id="username" class="form-control"
+                                   placeholder="e.g. ZelGray" value="ZelGray" autocomplete="off">
+                            <span class="input-group-text px-3">
+                                <span id="username-spinner"
+                                      class="spinner-border spinner-border-sm d-none"
+                                      role="status" aria-hidden="true"></span>
+                                <span id="username-ok" class="text-success d-none">&#10003;</span>
+                                <span id="username-err" class="text-danger d-none">&#10007;</span>
+                            </span>
+                        </div>
+                        <div id="username-feedback" class="form-text text-danger d-none"></div>
+                    </div>
+
+                    <!-- Always-on color pickers -->
+                    <div class="row g-3 mb-3">
+                        <div class="col-4">
+                            <label for="inner_color" class="form-label">Inner color</label>
+                            <input type="color" id="inner_color"
+                                   class="form-control form-control-color w-100" value="#000000">
+                        </div>
+                        <div class="col-4">
+                            <label for="outer_color" class="form-label">Outer color</label>
+                            <input type="color" id="outer_color"
+                                   class="form-control form-control-color w-100" value="#ffffff">
+                        </div>
+                        <div class="col-4">
+                            <label for="text_color" class="form-label">Text color</label>
+                            <input type="color" id="text_color"
+                                   class="form-control form-control-color w-100" value="#ffffff">
+                        </div>
+                    </div>
+
+                    <!-- Optional color pickers with toggles -->
+                    <div class="row g-3 mb-4">
+                        <div class="col-6">
+                            <div class="form-check form-switch mb-1">
+                                <input class="form-check-input" type="checkbox" id="enable_border"
+                                       onchange="togglePicker('border_color', this)">
+                                <label class="form-check-label" for="enable_border">Border color</label>
+                            </div>
+                            <input type="color" id="border_color"
+                                   class="form-control form-control-color w-100"
+                                   value="#000000" disabled>
+                        </div>
+                        <div class="col-6">
+                            <div class="form-check form-switch mb-1">
+                                <input class="form-check-input" type="checkbox" id="enable_logo"
+                                       onchange="togglePicker('logo_color', this)">
+                                <label class="form-check-label" for="enable_logo">Logo color</label>
+                            </div>
+                            <input type="color" id="logo_color"
+                                   class="form-control form-control-color w-100"
+                                   value="#000000" disabled>
+                        </div>
+                    </div>
+
+                    <!-- Truncate option -->
+                    <div class="form-check form-switch mb-4">
+                        <input class="form-check-input" type="checkbox" id="truncate_text">
+                        <label class="form-check-label" for="truncate_text">
+                            Truncate image to 750px
+                        </label>
+                    </div>
+
+                    <!-- Generate button -->
+                    <div class="d-grid">
+                        <button type="button" class="btn btn-primary" onclick="generate()">
+                            Generate userbar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result card (hidden until generate is clicked) -->
+            <div id="result-section" class="card shadow-sm mt-4 d-none">
+                <div class="card-body p-4">
+                    <h5 class="card-title mb-3">Your userbar</h5>
+
+                    <!-- Preview -->
+                    <div class="text-center mb-4">
+                        <a id="result-profile-link" href="#" target="_blank" rel="noopener">
+                            <img id="result-img" src="" alt="userbar" class="img-fluid">
+                        </a>
+                    </div>
+
+                    <!-- Copy rows -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Direct link</label>
+                        <div class="input-group">
+                            <input type="text" id="result-url" class="form-control font-monospace" readonly>
+                            <button class="btn btn-outline-secondary" type="button"
+                                    onclick="copyField('result-url')">Copy</button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">BB-code</label>
+                        <div class="input-group">
+                            <input type="text" id="result-bb" class="form-control font-monospace" readonly>
+                            <button class="btn btn-outline-secondary" type="button"
+                                    onclick="copyField('result-bb')">Copy</button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">BB-code + profile link</label>
+                        <div class="input-group">
+                            <input type="text" id="result-bb-link" class="form-control font-monospace" readonly>
+                            <button class="btn btn-outline-secondary" type="button"
+                                    onclick="copyField('result-bb-link')">Copy</button>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">HTML</label>
+                        <div class="input-group">
+                            <input type="text" id="result-html" class="form-control font-monospace" readonly>
+                            <button class="btn btn-outline-secondary" type="button"
+                                    onclick="copyField('result-html')">Copy</button>
+                        </div>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label fw-semibold">HTML + profile link</label>
+                        <div class="input-group">
+                            <input type="text" id="result-html-link" class="form-control font-monospace" readonly>
+                            <button class="btn btn-outline-secondary" type="button"
+                                    onclick="copyField('result-html-link')">Copy</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>const ROOT_URL = {{ root_url | tojson }};</script>
+<script src="{{ url_for('static', filename='js/generator.js') }}"></script>
 {% endblock %}

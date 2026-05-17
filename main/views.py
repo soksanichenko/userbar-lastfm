@@ -1,15 +1,16 @@
 from __future__ import annotations
 
 import logging
-from urllib.parse import parse_qsl, quote
+from urllib.parse import parse_qsl
 
-from flask import Response, redirect, render_template, request, send_file, url_for
+from flask import Response, jsonify, redirect, render_template, request, send_file, url_for
 
+from config import LASTFM_API_KEY
 from main import lastfm_app
-from main.forms import Generator
+from utils.api import LastFmException, User
 from utils.main import create_userbar
 from utils.nocache import nocache
-from utils.utils import hex_to_rgb_string, hex_to_rgb_tuple, parse_color_string
+from utils.utils import hex_to_rgb_tuple, parse_color_string
 
 logger = logging.getLogger(__name__)
 
@@ -34,30 +35,27 @@ _DEFAULT_IMG_DATA: dict[str, object] = {
 }
 
 
-@lastfm_app.route('/format1.html', methods=['GET', 'POST'])
-@lastfm_app.route('/generator', methods=['GET', 'POST'])
+@lastfm_app.route('/api/validate')
+def api_validate() -> Response:
+    """Return JSON indicating whether a Last.fm username is valid."""
+    username = request.args.get('username', '').strip()
+    if not username:
+        return jsonify({'valid': False, 'error': 'Username is required'})
+    user = User(LASTFM_API_KEY, username=username)
+    try:
+        user.user_get_recent_tracks(extended=1)
+        return jsonify({'valid': True})
+    except LastFmException as exc:
+        return jsonify({'valid': False, 'error': exc.message})
+
+
+@lastfm_app.route('/format1.html')
+@lastfm_app.route('/generator')
 def generator() -> str:
-    """Render the userbar generator form and build the result URL on submit."""
-    form = Generator()
-    data: dict[str, object] = {
-        'title': 'Last.Fm UserBar Generator',
-        'page_title': 'Last.Fm UserBar Generator',
-        'form': form,
-    }
-    if form.validate_on_submit():
-        base = '{}{}/'.format(request.url_root, form.data['username'])
-        params_parts = [
-            '{}={}'.format(key, hex_to_rgb_string(value))
-            for key, value in form.data.items()
-            if key in _COLOR_KEYS and value
-        ]
-        if form.data.get('truncate_text'):
-            params_parts.append('truncate_text=True')
-        if params_parts:
-            data['result'] = '{}{}/userbar.png'.format(base, quote('&'.join(params_parts)))
-        else:
-            data['result'] = '{}userbar.png'.format(base)
-    return render_template('format1.html', **data)
+    """Render the userbar generator page."""
+    return render_template('format1.html',
+                           title='Last.Fm UserBar Generator',
+                           root_url=request.url_root)
 
 
 @lastfm_app.route('/format2.html')

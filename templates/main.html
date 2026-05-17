@@ -1,5 +1,18 @@
 {% extends "index.html" %}
+{% block title %}Last.Fm UserBar{% endblock %}
 {% block content %}
-    <h1><a href="{{ root_url }}format1.html">Generator</a></h1>
-    {{ super() }}
+<div class="container py-5 text-center">
+    <h1 class="display-5 fw-bold mb-3">Last.fm UserBar</h1>
+    <p class="lead text-muted mb-4">
+        Generate a live userbar image that shows what you're scrobbling on Last.fm.
+    </p>
+    <a href="{{ url_for('lastfm_app.generator') }}" class="btn btn-primary btn-lg px-5">
+        Open Generator
+    </a>
+    <hr class="my-5">
+    <img src="{{ url_for('lastfm_app.new_user_bar', username='zelgray',
+         params='border_color=0_0_0&logo_color=0_0_0') }}"
+         alt="ZelGray Last.fm UserBar" class="img-fluid">
+    <p class="text-muted mt-5 small">Zelgadiss Graywords &copy; 2016</p>
+</div>
 {% endblock %}

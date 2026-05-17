@@ -9,4 +9,4 @@ lastfm_app = Blueprint(
     static_folder=os.path.join('..', 'static'),
 )
 
-from . import forms, views  # noqa: E402, F401
+from . import views  # noqa: E402, F401

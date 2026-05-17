@@ -1,7 +1,6 @@
 import os
 
 
-CSRF_ENABLED = True
 SECRET_KEY = os.environ.get('SECRET_KEY')
 LASTFM_API_KEY = os.environ.get('LASTFM_API_KEY')
 API_URL = os.environ.get('API_URL') or 'http://ws.audioscrobbler.com/2.0'
