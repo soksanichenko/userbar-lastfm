@@ -7,9 +7,9 @@ from io import BytesIO
 from PIL import Image, ImageDraw, ImageFont
 
 from config import LASTFM_API_KEY, PATH_TO_FONT
-from main import lastfm_app
+from sources.main import lastfm_app
 
-from .api import LastFmException, User
+from sources.utils.api import LastFmException, User
 
 logger = logging.getLogger(__name__)
 

@@ -13,7 +13,7 @@ def create_app() -> Flask:
     Returns:
         Configured Flask application instance.
     """
-    from main import lastfm_app
+    from sources.main import lastfm_app
 
     app = Flask(__name__)
     app.config.from_object(config)

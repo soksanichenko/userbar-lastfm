@@ -6,11 +6,11 @@ from urllib.parse import parse_qsl
 from flask import Response, jsonify, redirect, render_template, request, send_file, url_for
 
 from config import LASTFM_API_KEY
-from main import lastfm_app
-from utils.api import LastFmException, User
-from utils.main import create_userbar
-from utils.nocache import nocache
-from utils.utils import hex_to_rgb_tuple, parse_color_string
+from sources.main import lastfm_app
+from sources.utils.api import LastFmException, User
+from sources.utils.main import create_userbar
+from sources.utils.nocache import nocache
+from sources.utils.utils import hex_to_rgb_tuple, parse_color_string
 
 logger = logging.getLogger(__name__)
 
