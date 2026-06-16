@@ -1,7 +1,7 @@
 ---
 - name: Ensure app directory exists
   ansible.builtin.file:
-    path: "{{ userbar_lastfm_app_dir }}"
+    path: "{{ lastfm_userbar_app_dir }}"
     state: directory
     mode: '0755'
     owner: "{{ ansible_user }}"
@@ -11,7 +11,7 @@
 - name: Sync application code
   ansible.posix.synchronize:
     src: "{{ playbook_dir }}/../../"
-    dest: "{{ userbar_lastfm_app_dir }}/"
+    dest: "{{ lastfm_userbar_app_dir }}/"
     rsync_opts:
       - "--exclude=ansible/"
       - "--exclude=.git/"
@@ -21,19 +21,19 @@
 
 - name: Build Docker image
   community.docker.docker_image:
-    name: "{{ userbar_lastfm_image }}"
+    name: "{{ lastfm_userbar_image }}"
     tag: latest
     source: build
     build:
-      path: "{{ userbar_lastfm_app_dir }}"
+      path: "{{ lastfm_userbar_app_dir }}"
       pull: false
     force_source: "{{ _sync.changed }}"
   become: yes
 
 - name: Deploy container
   community.docker.docker_container:
-    name: "{{ userbar_lastfm_container_name }}"
-    image: "{{ userbar_lastfm_image }}:latest"
+    name: "{{ lastfm_userbar_container_name }}"
+    image: "{{ lastfm_userbar_image }}:latest"
     state: started
     restart_policy: unless-stopped
     recreate: "{{ _sync.changed }}"
@@ -47,7 +47,7 @@
 - name: Deploy nginx upstream config
   ansible.builtin.template:
     src: upstream.conf.j2
-    dest: "{{ nginx_custom_upstream_path }}/{{ userbar_lastfm_domain }}.conf"
+    dest: "{{ nginx_custom_upstream_path }}/{{ lastfm_userbar_domain }}.conf"
     mode: '0644'
   become: yes
   notify: Reload nginx
@@ -55,7 +55,7 @@
 - name: Deploy nginx location config
   ansible.builtin.template:
     src: location.conf.j2
-    dest: "{{ nginx_confd_path }}/{{ userbar_lastfm_domain }}-custom-locations/location.conf"
+    dest: "{{ nginx_confd_path }}/{{ lastfm_userbar_domain }}-custom-locations/location.conf"
     mode: '0644'
   become: yes
   notify: Reload nginx
