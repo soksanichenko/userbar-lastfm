@@ -15,7 +15,7 @@ def create_app() -> Flask:
     """
     from sources.main import lastfm_app
 
-    app = Flask(__name__)
+    app = Flask(__name__, static_folder=os.path.join('sources', 'static'))
     app.config.from_object(config)
     app.register_blueprint(lastfm_app, url_prefix='/')
     app.url_map.strict_slashes = False
