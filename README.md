@@ -106,4 +106,4 @@ Application secrets (`SECRET_KEY`, `LASTFM_API_KEY`) are pulled from Infisical a
 
 ## License
 
-No license specified.
+MIT — see [LICENSE](LICENSE).
