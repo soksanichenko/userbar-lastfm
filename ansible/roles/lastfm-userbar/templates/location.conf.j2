@@ -1,4 +1,5 @@
 location /static/ {
+    proxy_intercept_errors on;
     proxy_pass http://lastfm_userbar_upstream;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
@@ -13,6 +14,7 @@ location /static/ {
 }
 
 location / {
+    proxy_intercept_errors on;
     proxy_pass http://lastfm_userbar_upstream;
     proxy_set_header Host $host;
     proxy_set_header X-Real-IP $remote_addr;
