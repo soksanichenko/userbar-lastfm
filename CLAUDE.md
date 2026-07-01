@@ -6,33 +6,37 @@ Flask app that generates Last.fm userbar PNG images. No database. Stateless per-
 
 ```
 lastfm-userbar/
-├── config.py                  # Env-var config (no Pydantic — plain os.environ)
-├── wsgi.py                    # App factory, ProxyFix, force-HTTPS wrapper
+├── install_dependencies.sh    # Installs Python + Ansible collection deps, infisical CLI
+├── requirements.txt           # Dev tooling deps (pre-commit, ruff via pre-commit, ansible-lint, yamllint)
 ├── pyproject.toml             # Project metadata and ruff config
-├── requirements.txt           # Pinned deps
-├── Dockerfile                 # python:3.12-slim, gunicorn on port 8100
-├── main/
-│   ├── __init__.py            # Blueprint definition (lastfm_app)
-│   └── views.py               # All route handlers
-├── utils/
-│   ├── api.py                 # LastFmApi, User — Last.fm API client
-│   ├── main.py                # Image rendering (gradient, text, logo)
-│   ├── nocache.py             # @nocache decorator
-│   └── utils.py               # parse_color_string, hex_to_rgb_tuple
-├── static/
-│   ├── tahomabd.ttf           # Default font
-│   ├── arial.ttf
-│   └── logo.png               # Last.fm logo for overlay
-├── templates/
-│   ├── index.html
-│   ├── main.html              # Landing page
-│   └── format1.html           # Generator UI
+├── .pre-commit-config.yaml    # ruff + ruff-format hooks (args: sources/)
+├── sources/                   # Docker build context
+│   ├── Dockerfile              # python:3.12-slim, gunicorn on port 8100
+│   ├── config.py                # Env-var config (no Pydantic — plain os.environ)
+│   ├── wsgi.py                  # App factory, ProxyFix, force-HTTPS wrapper
+│   ├── requirements.txt         # Pinned app deps
+│   └── src/
+│       ├── main/
+│       │   ├── __init__.py     # Blueprint definition (lastfm_app)
+│       │   └── views.py        # All route handlers
+│       ├── utils/
+│       │   ├── api.py          # LastFmApi, User — Last.fm API client
+│       │   ├── main.py         # Image rendering (gradient, text, logo)
+│       │   ├── nocache.py      # @nocache decorator
+│       │   └── utils.py        # parse_color_string, hex_to_rgb_tuple
+│       ├── static/
+│       │   ├── tahomabd.ttf    # Default font
+│       │   ├── arial.ttf
+│       │   └── logo.png        # Last.fm logo for overlay
+│       └── templates/
+│           ├── index.html
+│           ├── main.html       # Landing page
+│           └── format1.html    # Generator UI
 └── ansible/
     ├── ansible.cfg
     ├── requirements.yml
     ├── inventories/
-    │   ├── zelgray.cherkasy.ua/   # Production inventory 1
-    │   └── zelgray.work/          # Production inventory 2
+    │   └── zelgray.work/          # Production inventory
     ├── playbooks/
     │   ├── deploy.yml
     │   └── pre_tasks/
@@ -46,6 +50,8 @@ lastfm-userbar/
                 ├── upstream.conf.j2
                 └── location.conf.j2
 ```
+
+Python package root is `sources/src` — internal imports use `src.*` (e.g. `from src.utils.api import User`), resolved because `sources/` is the process working directory both locally and inside the container.
 
 ## URL routes
 
@@ -65,7 +71,7 @@ All image routes are decorated with `@nocache`.
 
 ## Configuration
 
-Set via environment variables only (`config.py` uses `os.environ`):
+Set via environment variables only (`sources/config.py` uses `os.environ`):
 
 | Variable | Default | Required |
 |---|---|---|
@@ -79,7 +85,7 @@ Set via environment variables only (`config.py` uses `os.environ`):
 
 ## Image rendering pipeline
 
-`create_userbar` (utils/main.py):
+`create_userbar` (sources/src/utils/main.py):
 1. Calls `user_get_last_track` → Last.fm API (`User.GetRecentTracks`)
 2. Formats text: `{artist_name} - {track_name}` (or error string on failure)
 3. `paste_text` → `gradient` → gradient PNG with text overlaid

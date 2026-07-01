@@ -63,20 +63,22 @@ Set via environment variables:
 ## Running locally
 
 ```bash
-pip install -r requirements.txt
+pip install -r sources/requirements.txt
+cd sources
 SECRET_KEY=dev LASTFM_API_KEY=<your-key> python wsgi.py
 ```
 
 Or with Gunicorn:
 
 ```bash
+cd sources
 SECRET_KEY=dev LASTFM_API_KEY=<your-key> gunicorn --workers=2 --bind=0.0.0.0:8080 wsgi:application
 ```
 
 Or with Docker:
 
 ```bash
-docker build -t lastfm-userbar .
+docker build -t lastfm-userbar sources/
 docker run -p 8100:8100 \
   -e SECRET_KEY=dev \
   -e LASTFM_API_KEY=<your-key> \

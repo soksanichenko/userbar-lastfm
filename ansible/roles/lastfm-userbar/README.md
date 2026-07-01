@@ -6,7 +6,7 @@ Deploys the lastfm-userbar Flask app as a Docker container with nginx upstream a
 
 - Creates the app directory on the remote host
 - Syncs application code via rsync (excludes `ansible/`, `.git/`, `__pycache__/`)
-- Builds a Docker image from the project's `Dockerfile` (only when code changed)
+- Builds a Docker image from `sources/Dockerfile` (only when code changed)
 - Runs the container on the configured Docker network, injecting secrets as env vars
 - Deploys nginx upstream and location config templates; reloads nginx on change
 
@@ -43,7 +43,7 @@ Secrets injected as container env vars at deploy time via Infisical:
 
 ```bash
 cd ansible
-ansible-playbook -i inventories/zelgray.cherkasy.ua/ playbooks/deploy.yml
+ansible-playbook -i inventories/zelgray.work/ playbooks/deploy.yml
 ```
 
 ## Notes

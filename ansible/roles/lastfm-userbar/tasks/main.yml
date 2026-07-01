@@ -26,7 +26,7 @@
     tag: latest
     source: build
     build:
-      path: "{{ lastfm_userbar_app_dir }}"
+      path: "{{ lastfm_userbar_app_dir }}/sources"
       pull: false
     force_source: "{{ _sync.changed }}"
   become: yes
